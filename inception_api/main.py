@@ -17,11 +17,14 @@ from .client import InceptionAI, Message
 console = Console()
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(message)s",
     datefmt="[%X]",
     handlers=[RichHandler(rich_tracebacks=True)]
 )
+
+# Add this line after the logging config to silence httpx logs
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -245,25 +248,17 @@ def input(message: str):
         return
 
     try:
-        logger.debug(f"Sending message to chat {chat_id}: {message[:100]}...")  # Log first 100 chars
         messages = [Message(role="user", content=message)]
-        
         with console.status("[bold green]Thinking..."):
             response_text = ""
-            try:
-                for chunk in client.chat_completion(messages, chat_id=chat_id):
-                    if "content" in chunk.choices[0].delta:
-                        content = chunk.choices[0].delta["content"]
-                        response_text += content
-                        console.print(content, end="")
-                console.print()  # New line after response
-                logger.debug(f"Completed response, total length: {len(response_text)}")
-            except Exception as chunk_error:
-                logger.exception("Error processing response chunks")
-                raise chunk_error
+            for chunk in client.chat_completion(messages, chat_id=chat_id):
+                if "content" in chunk.choices[0].delta:
+                    content = chunk.choices[0].delta["content"]
+                    response_text += content
+                    console.print(content, end="")
+            console.print()  # New line after response
                 
     except Exception as e:
-        logger.exception("Error in input command")
         console.print(f"[red]Error sending message: {str(e)}[/red]")
         if hasattr(e, 'response'):
             console.print(f"[yellow]Response status: {e.response.status_code}[/yellow]")

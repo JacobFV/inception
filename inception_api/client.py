@@ -223,8 +223,6 @@ class InceptionAI:
             session_id=session_id,
             chat_id=chat_id,
         )
-
-        logger.debug(f"Sending chat completion request: {request.model_dump()}")
         
         response = self.client.post(
             f"{self.base_url}/api/chat/completions",
@@ -233,15 +231,11 @@ class InceptionAI:
             timeout=None  # Disable timeout for streaming
         )
         response.raise_for_status()
-        logger.debug(f"Got response with status {response.status_code}")
 
         # Process the streaming response manually
         for line in response.iter_lines():
             if not line:
                 continue
-            
-            # Line is already a string, no need to decode
-            logger.debug(f"Received line: {line[:100]}...")  # Log first 100 chars
             
             # SSE format starts with "data: "
             if line.startswith('data: '):
@@ -254,5 +248,4 @@ class InceptionAI:
                     yield chunk
                 except Exception as e:
                     logger.error(f"Error parsing chunk: {e}")
-                    logger.debug(f"Problem data: {data}")
                     raise 
