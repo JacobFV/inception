@@ -193,50 +193,50 @@ class InceptionAI:
             print(f"Error during browser automation: {str(e)}")
             raise
 
-    @classmethod
-    def from_credentials(cls, email: str, password: str) -> 'InceptionAI':
-        """Create an InceptionAI instance by signing in with email/password"""
-        try:
-            # Create temporary client for auth request
-            client = httpx.Client()
+    # @classmethod
+    # def from_credentials(cls, email: str, password: str) -> 'InceptionAI':
+    #     """Create an InceptionAI instance by signing in with email/password"""
+    #     try:
+    #         # Create temporary client for auth request
+    #         client = httpx.Client()
             
-            # Headers matching the actual request
-            auth_headers = {
-                "accept": "*/*",
-                "accept-language": "en-US,en;q=0.9",
-                "content-type": "application/json",
-                "origin": "https://chat.inceptionlabs.ai",
-                "referer": "https://chat.inceptionlabs.ai/auth",
-                "sec-fetch-dest": "empty",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-site": "same-origin"
-            }
+    #         # Headers matching the actual request
+    #         auth_headers = {
+    #             "accept": "*/*",
+    #             "accept-language": "en-US,en;q=0.9",
+    #             "content-type": "application/json",
+    #             "origin": "https://chat.inceptionlabs.ai",
+    #             "referer": "https://chat.inceptionlabs.ai/auth",
+    #             "sec-fetch-dest": "empty",
+    #             "sec-fetch-mode": "cors",
+    #             "sec-fetch-site": "same-origin"
+    #         }
             
-            # Make signin request
-            response = client.post(
-                "https://chat.inceptionlabs.ai/api/v1/auths/signin",
-                json={
-                    "email": email,
-                    "password": password
-                },
-                headers=auth_headers
-            )
-            response.raise_for_status()
+    #         # Make signin request
+    #         response = client.post(
+    #             "https://chat.inceptionlabs.ai/api/v1/auths/signin",
+    #             json={
+    #                 "email": email,
+    #                 "password": password
+    #             },
+    #             headers=auth_headers
+    #         )
+    #         response.raise_for_status()
             
-            # Parse response
-            signin_data = SignInResponse.model_validate(response.json())
+    #         # Parse response
+    #         signin_data = SignInResponse.model_validate(response.json())
             
-            # Create headers for authenticated requests
-            headers = {
-                "authorization": f"{signin_data.token_type} {signin_data.token}",
-                "content-type": "application/json",
-                "accept": "*/*",
-                "accept-language": "en-US,en;q=0.9",
-                "origin": "https://chat.inceptionlabs.ai",
-                "referer": "https://chat.inceptionlabs.ai/"
-            }
+    #         # Create headers for authenticated requests
+    #         headers = {
+    #             "authorization": f"{signin_data.token_type} {signin_data.token}",
+    #             "content-type": "application/json",
+    #             "accept": "*/*",
+    #             "accept-language": "en-US,en;q=0.9",
+    #             "origin": "https://chat.inceptionlabs.ai",
+    #             "referer": "https://chat.inceptionlabs.ai/"
+    #         }
             
-            return cls(headers=headers)
+    #         return cls(headers=headers)
             
         except httpx.HTTPError as e:
             if e.response.status_code == 401:
