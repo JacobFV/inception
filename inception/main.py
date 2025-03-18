@@ -12,7 +12,7 @@ from platformdirs import user_config_dir
 from rich.console import Console
 from rich.table import Table
 
-from .client import InceptionAI, Message
+from .client import Inception, Message
 
 console = Console()
 
@@ -50,12 +50,12 @@ def save_auth_headers(headers: dict):
     config["headers"] = headers
     save_config(config)
 
-def get_client() -> Optional[InceptionAI]:
+def get_client() -> Optional[Inception]:
     config = load_config()
     if "headers" not in config:
         console.print("[red]Not logged in. Please run 'inception-api auth login' first.[/red]")
         return None
-    return InceptionAI(headers=config["headers"])
+    return Inception(headers=config["headers"])
 
 def save_default_chat(chat_id: str):
     ensure_config_dir()
@@ -103,7 +103,7 @@ def auth_login(email: str, password: str):
         if not email and not password:
             console.print("[yellow]Please log in through the browser window...[/yellow]")
         
-        client = InceptionAI.from_web_auth(email=email, password=password)
+        client = Inception.from_web_auth(email=email, password=password)
         
         # Test the connection
         client.list_chats()

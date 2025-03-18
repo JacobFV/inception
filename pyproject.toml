@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "inception-api"
+name = "inception"
 version = "0.1.0"
 description = "Python client and CLI for the Inception AI API"
 readme = "README.md"
 packages = [
-    { include = "inception_api", from = "." }
+    { include = "inception", from = "." }
 ]
 
 [tool.poetry.dependencies]
@@ -23,7 +23,7 @@ python-dotenv = "^1.0.1"
 pytest = "^8.3.5"
 
 [tool.poetry.scripts]
-inception-api = "inception_api.main:cli"
+inception = "inception.main:cli"
 
 [build-system]
 requires = ["poetry-core"]

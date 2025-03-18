@@ -69,10 +69,10 @@ In interactive chat mode:
 ### Basic Usage
 
 ```python
-from inception_api import InceptionAI, Message
+from inception_api import Inception, Message
 
 # Initialize the client
-client = InceptionAI(api_key="your_api_key")
+client = Inception(api_key="your_api_key")
 
 # Create a new chat
 chat = client.create_chat("Hello, how can you help me today?")

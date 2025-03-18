@@ -111,7 +111,7 @@ class SignInResponse(BaseModel):
     expires_at: Optional[str]
     permissions: Permissions
 
-class InceptionAI:
+class Inception:
     def __init__(self, headers: Optional[Dict[str, str]] = None, base_url: str = "https://chat.inceptionlabs.ai"):
         self.base_url = base_url.rstrip("/")
         self.client = httpx.Client()
@@ -121,11 +121,11 @@ class InceptionAI:
         if "content-type" not in self.headers:
             self.headers["content-type"] = "application/json"
         
-        logger.debug(f"Initialized InceptionAI client with headers: {self.headers}")
+        logger.debug(f"Initialized Inception client with headers: {self.headers}")
 
     @classmethod
-    def from_web_auth(cls, email: str = None, password: str = None) -> 'InceptionAI':
-        """Create an InceptionAI instance by authenticating through web browser"""
+    def from_web_auth(cls, email: str = None, password: str = None) -> 'Inception':
+        """Create an Inception instance by authenticating through web browser"""
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(
@@ -194,8 +194,8 @@ class InceptionAI:
             raise
 
     # @classmethod
-    # def from_credentials(cls, email: str, password: str) -> 'InceptionAI':
-    #     """Create an InceptionAI instance by signing in with email/password"""
+    # def from_credentials(cls, email: str, password: str) -> 'Inception':
+    #     """Create an Inception instance by signing in with email/password"""
     #     try:
     #         # Create temporary client for auth request
     #         client = httpx.Client()

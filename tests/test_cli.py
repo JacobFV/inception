@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 import pytest
 from click.testing import CliRunner
 
-from inception_api.main import cli, CONFIG_FILE, DEFAULT_CHAT_FILE
-from inception_api.client import InceptionAI
+from inception.main import cli, CONFIG_FILE, DEFAULT_CHAT_FILE
+from inception.client import Inception
 
 @pytest.fixture
 def runner():
@@ -14,7 +14,7 @@ def runner():
 
 @pytest.fixture
 def mock_client():
-    with patch("inception_api.main.InceptionAI") as mock:
+    with patch("inception_api.main.Inception") as mock:
         yield mock
 
 @pytest.fixture
@@ -44,9 +44,9 @@ def mock_config(temp_config):
     return config
 
 def test_auth_login(runner, mock_client, temp_config):
-    with patch("inception_api.main.InceptionAI.from_web_auth") as mock_auth:
+    with patch("inception_api.main.Inception.from_web_auth") as mock_auth:
         # Create a mock client with proper headers
-        mock_client = InceptionAI(headers={
+        mock_client = Inception(headers={
             "authorization": "Bearer test-token",
             "content-type": "application/json",
             "cookie": "test-cookie"

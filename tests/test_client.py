@@ -8,8 +8,8 @@ from sseclient import SSEClient
 import os
 from dotenv import load_dotenv
 
-from inception_api.client import (
-    InceptionAI,
+from inception.client import (
+    Inception,
     Message,
     Chat,
     ChatHistory,
@@ -43,7 +43,7 @@ def sample_headers():
 
 @pytest.fixture
 def client(mock_client, sample_headers):
-    return InceptionAI(headers=sample_headers)
+    return Inception(headers=sample_headers)
 
 @pytest.fixture
 def real_client():
@@ -55,10 +55,10 @@ def real_client():
         pytest.skip("INCEPTION_EMAIL and INCEPTION_PASSWORD environment variables required for integration tests")
     
     # Use web auth instead of direct credentials
-    return InceptionAI.from_web_auth(email=email, password=password)
+    return Inception.from_web_auth(email=email, password=password)
 
 def test_client_initialization(sample_headers):
-    client = InceptionAI(headers=sample_headers)
+    client = Inception(headers=sample_headers)
     assert client.base_url == "https://chat.inceptionlabs.ai"
     assert client.headers == sample_headers
     assert "content-type" in client.headers
@@ -85,7 +85,7 @@ def test_client_from_web_auth():
         mock_context.new_page.return_value = mock_page
         mock_playwright.return_value.__enter__.return_value.chromium.launch.return_value.new_context.return_value = mock_context
 
-        client = InceptionAI.from_web_auth()
+        client = Inception.from_web_auth()
         
         assert "authorization" in client.headers
         assert "cookie" in client.headers
@@ -122,7 +122,7 @@ def test_client_from_credentials():
         mock_response.raise_for_status.return_value = None
         mock_client.return_value.post.return_value = mock_response
 
-        client = InceptionAI.from_credentials("test@example.com", "password")
+        client = Inception.from_credentials("test@example.com", "password")
         
         assert "authorization" in client.headers
         assert client.headers["authorization"] == "Bearer test-token"
