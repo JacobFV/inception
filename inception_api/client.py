@@ -320,14 +320,18 @@ class InceptionAI:
             f"{self.base_url}/api/chat/completions",
             headers=self.headers,
             json=request.model_dump(),
-            timeout=None  # Disable timeout for streaming
+            timeout=None
         )
         response.raise_for_status()
 
-        # Process the streaming response manually
+        # Process the streaming response
         for line in response.iter_lines():
             if not line:
                 continue
+            
+            # Convert bytes to string if needed
+            if isinstance(line, bytes):
+                line = line.decode('utf-8')
             
             # SSE format starts with "data: "
             if line.startswith('data: '):
