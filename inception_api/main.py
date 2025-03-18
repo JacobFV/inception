@@ -284,13 +284,15 @@ def chat():
             return
 
     console.print("[bold blue]Starting interactive chat session (Ctrl+C to exit)[/bold blue]")
-    console.print("[dim]Type your messages and press Enter. Use /quit to exit.[/dim]\n")
+    console.print("[dim]Type your messages and press Enter. Use /quit to exit.[/dim]")
+    console.print("─" * 50)  # Add horizontal line before starting chat
 
     messages = []
     try:
         while True:
             # Get user input
-            user_message = click.prompt("You", prompt_suffix="\n")
+            console.print("\n[bold blue]┌─ You[/bold blue]")
+            user_message = click.prompt("└─", prompt_suffix=" ")
             
             if user_message.strip().lower() == "/quit":
                 break
@@ -299,7 +301,8 @@ def chat():
             messages.append(Message(role="user", content=user_message))
             
             # Get AI response
-            console.print("\n[bold]Assistant[/bold]", end="\n")
+            console.print("\n[bold green]┌─ Assistant[/bold green]")
+            console.print("└─", end=" ")
             
             try:
                 response_text = ""
@@ -309,6 +312,7 @@ def chat():
                         response_text += content
                         console.print(content, end="")
                 console.print("\n")  # Add newline after response
+                console.print("─" * 50)  # Add separator line after each exchange
 
                 # Add assistant's response to message history
                 messages.append(Message(role="assistant", content=response_text))
@@ -319,6 +323,7 @@ def chat():
 
     except KeyboardInterrupt:
         console.print("\n[blue]Exiting chat session[/blue]")
+        console.print("─" * 50)  # Add final separator line
 
 @cli.command()
 def debug():
