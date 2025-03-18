@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, AsyncIterator
+from typing import List, Optional, Dict, Any, AsyncIterator, Tuple
 from datetime import datetime
 from uuid import UUID, uuid4
 import json
@@ -84,6 +84,33 @@ class ChatCompletionChunk(BaseModel):
     system_fingerprint: str
     usage: Usage
 
+class WorkspacePermissions(BaseModel):
+    models: bool
+    knowledge: bool
+    prompts: bool
+    tools: bool
+
+class ChatPermissions(BaseModel):
+    file_upload: bool
+    delete: bool
+    edit: bool
+    temporary: bool
+
+class Permissions(BaseModel):
+    workspace: WorkspacePermissions
+    chat: ChatPermissions
+
+class SignInResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    role: str
+    profile_image_url: str
+    token: str
+    token_type: str
+    expires_at: Optional[str]
+    permissions: Permissions
+
 class InceptionAI:
     def __init__(self, headers: Optional[Dict[str, str]] = None, base_url: str = "https://chat.inceptionlabs.ai"):
         self.base_url = base_url.rstrip("/")
@@ -97,7 +124,7 @@ class InceptionAI:
         logger.debug(f"Initialized InceptionAI client with headers: {self.headers}")
 
     @classmethod
-    def from_web_auth(cls) -> 'InceptionAI':
+    def from_web_auth(cls, email: str = None, password: str = None) -> 'InceptionAI':
         """Create an InceptionAI instance by authenticating through web browser"""
         try:
             with sync_playwright() as p:
@@ -118,6 +145,19 @@ class InceptionAI:
                     
                     print("Navigating to auth page...")
                     page.goto("https://chat.inceptionlabs.ai/auth", wait_until="networkidle")
+                    
+                    # If credentials are provided, attempt to fill them in
+                    if email and password:
+                        # Wait for and fill in email field
+                        page.wait_for_selector('input[type="email"]')
+                        page.fill('input[type="email"]', email)
+                        
+                        # Wait for and fill in password field
+                        page.wait_for_selector('input[type="password"]')
+                        page.fill('input[type="password"]', password)
+                        
+                        # Click the sign in button
+                        page.click('button[type="submit"]')
                     
                     print("Waiting for login...")
                     # Just wait for main page load instead of specific /chats path
@@ -152,6 +192,58 @@ class InceptionAI:
         except Exception as e:
             print(f"Error during browser automation: {str(e)}")
             raise
+
+    @classmethod
+    def from_credentials(cls, email: str, password: str) -> 'InceptionAI':
+        """Create an InceptionAI instance by signing in with email/password"""
+        try:
+            # Create temporary client for auth request
+            client = httpx.Client()
+            
+            # Headers matching the actual request
+            auth_headers = {
+                "accept": "*/*",
+                "accept-language": "en-US,en;q=0.9",
+                "content-type": "application/json",
+                "origin": "https://chat.inceptionlabs.ai",
+                "referer": "https://chat.inceptionlabs.ai/auth",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-origin"
+            }
+            
+            # Make signin request
+            response = client.post(
+                "https://chat.inceptionlabs.ai/api/v1/auths/signin",
+                json={
+                    "email": email,
+                    "password": password
+                },
+                headers=auth_headers
+            )
+            response.raise_for_status()
+            
+            # Parse response
+            signin_data = SignInResponse.model_validate(response.json())
+            
+            # Create headers for authenticated requests
+            headers = {
+                "authorization": f"{signin_data.token_type} {signin_data.token}",
+                "content-type": "application/json",
+                "accept": "*/*",
+                "accept-language": "en-US,en;q=0.9",
+                "origin": "https://chat.inceptionlabs.ai",
+                "referer": "https://chat.inceptionlabs.ai/"
+            }
+            
+            return cls(headers=headers)
+            
+        except httpx.HTTPError as e:
+            if e.response.status_code == 401:
+                raise Exception("Invalid email or password") from e
+            raise Exception(f"Authentication failed: {str(e)}") from e
+        except Exception as e:
+            raise Exception(f"Error during authentication: {str(e)}") from e
 
     def create_chat(self, initial_message: str, model: str = "lambda.mercury-coder-small") -> Chat:
         message = Message(

@@ -22,6 +22,9 @@ The library includes a full-featured CLI for interacting with the Inception AI A
 # Log in to Inception AI
 inception-api auth login
 
+# Optionally pass your email and password directly from the CLI
+inception-api auth login --email "email@example.com" --password "super-secret-password"
+
 # Check authentication status
 inception-api auth status
 

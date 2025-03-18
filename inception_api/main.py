@@ -77,7 +77,9 @@ def auth():
     pass
 
 @auth.command("login")
-def auth_login():
+@click.option('--email', help='Email for credential login')
+@click.option('--password', help='Password for credential login', hide_input=True)
+def auth_login(email: str, password: str):
     """Log in to Inception AI through web browser"""
     try:
         console.print("[green]Installing browser requirements...[/green]")
@@ -98,9 +100,10 @@ def auth_login():
             subprocess.run(["python", "-m", "playwright", "install", "chromium"], check=True)
         
         console.print("[green]Opening browser for authentication...[/green]")
-        console.print("[yellow]Please log in through the browser window...[/yellow]")
+        if not email and not password:
+            console.print("[yellow]Please log in through the browser window...[/yellow]")
         
-        client = InceptionAI.from_web_auth()
+        client = InceptionAI.from_web_auth(email=email, password=password)
         
         # Test the connection
         client.list_chats()
