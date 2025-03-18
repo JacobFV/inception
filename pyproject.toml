@@ -1,0 +1,22 @@
+[project]
+name = "inception-api"
+version = "0.1.0"
+description = "Python client and CLI for the Inception AI API"
+readme = "README.md"
+requires-python = ">=3.12,4.0"
+dependencies = [
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+    "sseclient-py>=1.8.0",
+    "typing-extensions>=4.5.0",
+    "click>=8.0.0",
+    "platformdirs>=3.0.0",
+    "rich>=13.0.0"
+]
+
+[project.scripts]
+inception-api = "inception_api.main:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
