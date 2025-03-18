@@ -1,7 +1,9 @@
 import json
 import os
 from pathlib import Path
+import subprocess
 from typing import Optional
+from datetime import datetime
 
 import click
 from platformdirs import user_config_dir
@@ -28,12 +30,18 @@ def save_config(config: dict):
     ensure_config_dir()
     CONFIG_FILE.write_text(json.dumps(config, indent=2))
 
+def save_auth_headers(headers: dict):
+    """Save authentication headers to config"""
+    config = load_config()
+    config["headers"] = headers
+    save_config(config)
+
 def get_client() -> Optional[InceptionAI]:
     config = load_config()
-    if "api_key" not in config:
+    if "headers" not in config:
         console.print("[red]Not logged in. Please run 'inception-api auth login' first.[/red]")
         return None
-    return InceptionAI(api_key=config["api_key"])
+    return InceptionAI(headers=config["headers"])
 
 def save_default_chat(chat_id: str):
     ensure_config_dir()
@@ -56,26 +64,50 @@ def auth():
 
 @auth.command("login")
 def auth_login():
-    """Log in to Inception AI"""
-    api_key = click.prompt("Enter your API key", hide_input=True)
-    
-    # Test the API key
-    client = InceptionAI(api_key=api_key)
+    """Log in to Inception AI through web browser"""
     try:
+        console.print("[green]Installing browser requirements...[/green]")
+        
+        # Install playwright and browsers if needed
+        try:
+            import playwright
+        except ImportError:
+            console.print("[yellow]Installing playwright...[/yellow]")
+            subprocess.run(["pip", "install", "playwright"], check=True)
+            import playwright
+
+        try:
+            subprocess.run(["playwright", "install", "chromium"], check=True)
+        except Exception as e:
+            console.print(f"[red]Failed to install browser: {str(e)}[/red]")
+            console.print("[yellow]Trying alternative installation...[/yellow]")
+            subprocess.run(["python", "-m", "playwright", "install", "chromium"], check=True)
+        
+        console.print("[green]Opening browser for authentication...[/green]")
+        console.print("[yellow]Please log in through the browser window...[/yellow]")
+        
+        client = InceptionAI.from_web_auth()
+        
+        # Test the connection
         client.list_chats()
-        config = load_config()
-        config["api_key"] = api_key
-        save_config(config)
+        
+        # Save the headers
+        save_auth_headers(client.headers)
         console.print("[green]Successfully logged in![/green]")
+        
     except Exception as e:
         console.print(f"[red]Failed to log in: {str(e)}[/red]")
+        if "playwright" in str(e).lower():
+            console.print("[yellow]Try running these commands manually:[/yellow]")
+            console.print("pip install playwright")
+            console.print("playwright install chromium")
 
 @auth.command("logout")
 def auth_logout():
     """Log out from Inception AI"""
     config = load_config()
-    if "api_key" in config:
-        del config["api_key"]
+    if "headers" in config:
+        del config["headers"]
         save_config(config)
     console.print("[green]Successfully logged out![/green]")
 
@@ -83,7 +115,7 @@ def auth_logout():
 def auth_status():
     """Check authentication status"""
     config = load_config()
-    if "api_key" in config:
+    if "headers" in config:
         console.print("[green]Logged in[/green]")
     else:
         console.print("[red]Not logged in[/red]")
@@ -101,25 +133,39 @@ def list_chats():
         return
 
     try:
-        response = client.list_chats()
+        chats = client.list_chats()
+        if not chats:
+            console.print("[yellow]No chats found[/yellow]")
+            return
+
         table = Table(show_header=True)
         table.add_column("ID")
         table.add_column("Title")
+        table.add_column("Updated")
         table.add_column("Default", justify="center")
 
         default_chat = get_default_chat()
         
-        for chat in response.get("chats", []):
+        for chat in chats:
             is_default = "✓" if chat["id"] == default_chat else ""
+            # Convert timestamp to readable format if it exists
+            updated = datetime.fromtimestamp(chat.get('updated_at', 0)).strftime('%Y-%m-%d %H:%M:%S') if chat.get('updated_at') else ''
+            
             table.add_row(
                 chat["id"],
                 chat.get("title", "Untitled"),
+                updated,
                 is_default
             )
         
         console.print(table)
     except Exception as e:
+        # More detailed error output
         console.print(f"[red]Error listing chats: {str(e)}[/red]")
+        console.print(f"[yellow]Error type: {type(e)}[/yellow]")
+        if hasattr(e, 'response'):
+            console.print(f"[yellow]Response status: {e.response.status_code}[/yellow]")
+            console.print(f"[yellow]Response text: {e.response.text}[/yellow]")
 
 @chats.command("delete")
 @click.argument("chat_id")
