@@ -28,7 +28,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-CONFIG_DIR = Path(user_config_dir("inception-api", "inception-labs"))
+CONFIG_DIR = Path(user_config_dir("inception", "inception-labs"))
 CONFIG_FILE = CONFIG_DIR / "config.json"
 DEFAULT_CHAT_FILE = CONFIG_DIR / "default_chat.json"
 
@@ -53,7 +53,7 @@ def save_auth_headers(headers: dict):
 def get_client() -> Optional[Inception]:
     config = load_config()
     if "headers" not in config:
-        console.print("[red]Not logged in. Please run 'inception-api auth login' first.[/red]")
+        console.print("[red]Not logged in. Please run 'inception auth login' first.[/red]")
         return None
     return Inception(headers=config["headers"])
 
@@ -247,7 +247,7 @@ def input(message: str):
 
     chat_id = get_default_chat()
     if not chat_id:
-        console.print("[red]No default chat set. Use 'inception-api chats set-default' first.[/red]")
+        console.print("[red]No default chat set. Use 'inception chats set-default' first.[/red]")
         return
 
     try:

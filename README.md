@@ -5,6 +5,12 @@ A Python client library and CLI for the Inception AI API, featuring Pydantic mod
 ## Installation
 
 ```bash
+pip install inception
+```
+
+### Dev Mode
+
+```bash
 # Install from source
 pip install -e .
 
@@ -20,42 +26,42 @@ The library includes a full-featured CLI for interacting with the Inception AI A
 
 ```bash
 # Log in to Inception AI
-inception-api auth login
+inception auth login
 
 # Optionally pass your email and password directly from the CLI
-inception-api auth login --email "email@example.com" --password "super-secret-password"
+inception auth login --email "email@example.com" --password "super-secret-password"
 
 # Check authentication status
-inception-api auth status
+inception auth status
 
 # Log out
-inception-api auth logout
+inception auth logout
 ```
 
 ### Chat Management
 
 ```bash
 # List all chats
-inception-api chats list
+inception chats list
 
 # Create a new chat
-inception-api chats new
+inception chats new
 
 # Delete a chat
-inception-api chats delete <chat_id>
+inception chats delete <chat_id>
 
 # Set default chat for input/chat commands
-inception-api chats set-default <chat_id>
+inception chats set-default <chat_id>
 ```
 
 ### Chat Interaction
 
 ```bash
 # Send a single message (uses default chat)
-inception-api input "What is Python?"
+inception input "What is Python?"
 
 # Start interactive chat session
-inception-api chat
+inception chat
 ```
 
 In interactive chat mode:
@@ -161,7 +167,7 @@ pytest --cov=inception_api
 ### Project Structure
 
 ```
-inception-api/
+inception/
 ├── inception_api/
 │   ├── __init__.py
 │   ├── client.py    # Core API client
