@@ -8,11 +8,15 @@ import socketserver
 import threading
 import urllib.parse
 import time
+import logging
 
 import httpx
 from pydantic import BaseModel, Field
 from sseclient import SSEClient
 from playwright.sync_api import sync_playwright
+
+# Add near the top of the file, after imports
+logger = logging.getLogger(__name__)
 
 class Message(BaseModel):
     id: Optional[str] = Field(default_factory=lambda: str(uuid4()))
@@ -89,6 +93,8 @@ class InceptionAI:
         # Ensure content-type is set
         if "content-type" not in self.headers:
             self.headers["content-type"] = "application/json"
+        
+        logger.debug(f"Initialized InceptionAI client with headers: {self.headers}")
 
     @classmethod
     def from_web_auth(cls) -> 'InceptionAI':
@@ -218,17 +224,35 @@ class InceptionAI:
             chat_id=chat_id,
         )
 
+        logger.debug(f"Sending chat completion request: {request.model_dump()}")
+        
         response = self.client.post(
             f"{self.base_url}/api/chat/completions",
             headers=self.headers,
             json=request.model_dump(),
-            stream=True
+            timeout=None  # Disable timeout for streaming
         )
         response.raise_for_status()
+        logger.debug(f"Got response with status {response.status_code}")
 
-        client = SSEClient(response)
-        for event in client.events():
-            if event.data == "[DONE]":
-                break
-            chunk = ChatCompletionChunk.model_validate(json.loads(event.data))
-            yield chunk 
+        # Process the streaming response manually
+        for line in response.iter_lines():
+            if not line:
+                continue
+            
+            # Line is already a string, no need to decode
+            logger.debug(f"Received line: {line[:100]}...")  # Log first 100 chars
+            
+            # SSE format starts with "data: "
+            if line.startswith('data: '):
+                data = line[6:]  # Remove "data: " prefix
+                if data == "[DONE]":
+                    break
+                
+                try:
+                    chunk = ChatCompletionChunk.model_validate(json.loads(data))
+                    yield chunk
+                except Exception as e:
+                    logger.error(f"Error parsing chunk: {e}")
+                    logger.debug(f"Problem data: {data}")
+                    raise 

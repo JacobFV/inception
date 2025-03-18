@@ -33,7 +33,7 @@ inception-api auth logout
 
 ```bash
 # List all chats
-inception-api chats ls
+inception-api chats list
 
 # Create a new chat
 inception-api chats new

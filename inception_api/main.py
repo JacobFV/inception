@@ -4,6 +4,8 @@ from pathlib import Path
 import subprocess
 from typing import Optional
 from datetime import datetime
+import logging
+from rich.logging import RichHandler
 
 import click
 from platformdirs import user_config_dir
@@ -13,6 +15,15 @@ from rich.table import Table
 from .client import InceptionAI, Message
 
 console = Console()
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)]
+)
+
+logger = logging.getLogger(__name__)
 
 CONFIG_DIR = Path(user_config_dir("inception-api", "inception-labs"))
 CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -125,7 +136,7 @@ def chats():
     """Chat management commands"""
     pass
 
-@chats.command("ls")
+@chats.command("list")
 def list_chats():
     """List all chats"""
     client = get_client()
@@ -208,8 +219,8 @@ def set_default_chat(chat_id: str):
 
     try:
         # Verify chat exists
-        response = client.list_chats()
-        chat_exists = any(chat["id"] == chat_id for chat in response.get("chats", []))
+        chats = client.list_chats()
+        chat_exists = any(chat["id"] == chat_id for chat in chats)
         
         if not chat_exists:
             console.print(f"[red]Chat {chat_id} does not exist[/red]")
@@ -234,17 +245,29 @@ def input(message: str):
         return
 
     try:
+        logger.debug(f"Sending message to chat {chat_id}: {message[:100]}...")  # Log first 100 chars
         messages = [Message(role="user", content=message)]
+        
         with console.status("[bold green]Thinking..."):
             response_text = ""
-            for chunk in client.chat_completion(messages, chat_id=chat_id):
-                if "content" in chunk.choices[0].delta:
-                    content = chunk.choices[0].delta["content"]
-                    response_text += content
-                    console.print(content, end="")
-            console.print()  # New line after response
+            try:
+                for chunk in client.chat_completion(messages, chat_id=chat_id):
+                    if "content" in chunk.choices[0].delta:
+                        content = chunk.choices[0].delta["content"]
+                        response_text += content
+                        console.print(content, end="")
+                console.print()  # New line after response
+                logger.debug(f"Completed response, total length: {len(response_text)}")
+            except Exception as chunk_error:
+                logger.exception("Error processing response chunks")
+                raise chunk_error
+                
     except Exception as e:
+        logger.exception("Error in input command")
         console.print(f"[red]Error sending message: {str(e)}[/red]")
+        if hasattr(e, 'response'):
+            console.print(f"[yellow]Response status: {e.response.status_code}[/yellow]")
+            console.print(f"[yellow]Response text: {e.response.text}[/yellow]")
 
 @cli.command()
 def chat():
@@ -301,6 +324,39 @@ def chat():
 
     except KeyboardInterrupt:
         console.print("\n[blue]Exiting chat session[/blue]")
+
+@cli.command()
+def debug():
+    """Print debug information about the current setup"""
+    config = load_config()
+    
+    console.print("\n[bold]Debug Information[/bold]")
+    
+    # Check config
+    console.print("\n[bold]Configuration:[/bold]")
+    if "headers" in config:
+        headers = config["headers"].copy()
+        if "authorization" in headers:
+            headers["authorization"] = headers["authorization"][:20] + "..."
+        if "cookie" in headers:
+            headers["cookie"] = headers["cookie"][:20] + "..."
+        console.print(f"Headers: {headers}")
+    else:
+        console.print("[red]No headers found in config[/red]")
+    
+    # Check default chat
+    console.print("\n[bold]Default Chat:[/bold]")
+    default_chat = get_default_chat()
+    if default_chat:
+        console.print(f"Default chat ID: {default_chat}")
+    else:
+        console.print("[yellow]No default chat set[/yellow]")
+    
+    # Check directories
+    console.print("\n[bold]Directories:[/bold]")
+    console.print(f"Config directory: {CONFIG_DIR}")
+    console.print(f"Config file exists: {CONFIG_FILE.exists()}")
+    console.print(f"Default chat file exists: {DEFAULT_CHAT_FILE.exists()}")
 
 if __name__ == "__main__":
     cli()
